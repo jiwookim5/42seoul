@@ -71,6 +71,7 @@ int	setting_struct(t_info *info)
 	info->philos = malloc(sizeof(t_philo) * info->num_philo);
 	info->t_philo = malloc(sizeof(pthread_t) * info->num_philo);
 	info->fork = malloc(sizeof(int) * info->num_philo);
+	// 포크의 배열 -> 포크가 여러개니까 check_argv에서 뮤텍스를 만들어줌
 	info->m_fork = malloc(sizeof(pthread_mutex_t) * info->num_philo);
 	if (!info->philos || !info->t_philo || !info->fork || !info->m_fork)
 		return (RET_ERROR);
@@ -92,6 +93,7 @@ int	check_argv(t_info *info)
 	while (i < info->num_philo)
 	{
 		info->fork[i] = 1;
+		// 여기서 뮤텍스를 배열돌면서 만들어줌
 		if (pthread_mutex_init(&info->m_fork[i], 0))
 		{
 			p_error("ERROR : mutex initialize error");
@@ -109,6 +111,7 @@ t_info *make_info(int argc, char **argv)
 
 	if (!(argc == 5 || argc == 6))
 		return (0);
+	//t_info 구조체에 대한 메모리를 할당
 	info = (t_info *)malloc(sizeof(t_info));
 	memset(info, 0, sizeof(t_info));
 	if (init_info_argv(argc, argv, info) == RET_ERROR || \
@@ -203,6 +206,7 @@ void	grab_fork(t_info *info, t_philo *p)
 {
 	if (p->id % 2)
 	{
+		// 여기서 뮤텍스 락을 하고 day_running_check_die 에서 열음
 		pthread_mutex_lock(&info->m_fork[p->left_fork]);
 		info->fork[p->left_fork] = 0;
 		voice(FORK, info, p);
@@ -242,6 +246,7 @@ void	philo_eat(t_info *info, t_philo *p)
 	gettimeofday(&time, NULL);
 	// 현재시간 즉 먹은 시간
 	p->current_eat = time;
+	// usleep을 하는 이유
 	custom_usleep_timer(&time, info->time_to_eat);
 	pthread_mutex_lock(&p->m_eat_count);
 	// 동시에 많은 스레드가 이 작업을 할 수 있기 때문에 복사 후 증가시킴
@@ -263,10 +268,40 @@ void	philo_eat(t_info *info, t_philo *p)
 int	day_running_check_die(int die, t_philo *p)
 {
 	pthread_mutex_lock(&p->info->m_flag_die);
-	printf("flag = %d\n", p->info->flag_die);
 	die = p->info->flag_die;
 	pthread_mutex_unlock(&p->info->m_flag_die);
 	return (die);
+}
+
+int	day_running_check_eat_all(int eat_all, t_philo *p)
+{
+	pthread_mutex_lock(&p->m_flag_eat_all);
+	eat_all = p->flag_eat_all;
+	pthread_mutex_unlock(&p->m_flag_eat_all);
+	return (eat_all);
+}
+
+void	put_down_fork(t_info *info, t_philo *p)
+{
+	info->fork[p->right_fork] = 1;
+	info->fork[p->left_fork] = 1;
+	pthread_mutex_unlock(&info->m_fork[p->right_fork]);
+	pthread_mutex_unlock(&info->m_fork[p->left_fork]);
+}
+
+void	philo_sleep(t_info *info, t_philo *p)
+{
+	struct timeval	time;
+
+	voice(SLEEP, info, p);
+	gettimeofday(&time, NULL);
+	custom_usleep_timer(&time, info->time_to_sleep);
+}
+
+void	philo_think(t_info *info, t_philo *p)
+{
+	voice(THINK, info, p);
+	usleep(100);
 }
 
 void	philo_day_running(t_philo *p)
@@ -307,7 +342,6 @@ void	philo_day_running(t_philo *p)
 // 함수의 목적은 철학자가 생존하는 동안 수행할 행동을 결정하고 실행하는 것
 void	*philo_run(void *arg)
 {
-	printf("dd\n");
 	t_philo	*run;
 
 	run = (t_philo *)arg;
@@ -361,7 +395,6 @@ int	check_philo_dead(t_info *info, t_philo *p)
 	gettimeofday(&curr, 0);
 	if (time_gap(p->current_eat, curr) > info->time_to_die)
 	{
-		printf("aaa = %d\n", time_gap(p->current_eat, curr) );
 		pthread_mutex_lock(&info->m_flag_die);
 		info->flag_die = 1;
 		pthread_mutex_unlock(&info->m_flag_die);
@@ -397,31 +430,47 @@ int	monitor(t_info *info)
 			return (-1);
 		i = 0;
 	}
-	printf("00\n");
 	return (info->philos[i].id + 1);
 }
 ////////////////////////////////////////////////////////////////
 //main
+// 스레드가 끝날때까지 기다림
+int	philo_collect_all_thread(t_info *info)
+{
+	int	i;
+
+	i = 0;
+	while (i < info->num_philo)
+	{
+		if (pthread_join(info->t_philo[i], NULL) >= 0)
+			i++;
+		else
+			return (RET_ERROR);
+	}
+	return (1);
+}
 
 int	philo(t_info *info)
 {
-	// int				gap;
-	// struct timeval	curr;
+	int				gap;
+	struct timeval	curr;
 	int				ret_monitor;
 
 	if (philo_init(info) == RET_ERROR)
 		return (RET_ERROR);
 	if (philo_create_thread(info) == RET_ERROR)
 		return (RET_ERROR);
+	// 모니터로 죽은 애들 있는지 확인
 	ret_monitor = monitor(info);
-	// gettimeofday(&curr, NULL);
-	// gap = time_gap(info->start_time, curr);
-	// if (ret_monitor == -1)
-	// 	printf("== philo eat all. dinning end! ==\n");
-	// else
-	// 	printf("[%d] philo %d died\n", gap, ret_monitor);
-	// if (philo_collect_all_thread(info) == RET_ERROR)
-	// 	return (RET_ERROR);
+	gettimeofday(&curr, NULL);
+	gap = time_gap(info->start_time, curr);
+	if (ret_monitor == -1)
+		printf("== philo eat all. dinning end! ==\n");
+	else
+		printf("[%d] philo %d died\n", gap, ret_monitor);
+	// 스레드가 다 끝날 때 까지 기다림
+	if (philo_collect_all_thread(info) == RET_ERROR)
+	 	return (RET_ERROR);
 	return (0);
 }
 
