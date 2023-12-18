@@ -304,14 +304,14 @@ void	philo_think(t_info *info, t_philo *p)
 	usleep(100);
 }
 
+
 void	philo_day_running(t_philo *p)
 {
 	int	die;
 	int	eat_all;
 
 	die = 0;
-	eat_all = 0;
-	//철학자가 죽기 전까지 무한루프
+	eat_all = 0;	//철학자가 죽기 전까지 무한루프
 	while (1)
 	{
 		// 철학자가 죽었는지에 대한 여부 체크
@@ -339,6 +339,7 @@ void	philo_day_running(t_philo *p)
 	}
 }
 
+
 // 함수의 목적은 철학자가 생존하는 동안 수행할 행동을 결정하고 실행하는 것
 void	*philo_run(void *arg)
 {
@@ -355,13 +356,16 @@ void	*philo_run(void *arg)
 		pthread_mutex_unlock(&run->info->m_fork[run->right_fork]);
 		return (NULL);
 	}
+	// 철학자가 동시에 포크를 집지 않게 홀수 철학자는 0.1초만큼 기다림
 	else if ((run->id) % 2 != 0)
-		usleep(100);
+		usleep(10000);
 	philo_day_running(run);
 	return (NULL);
 }
 
-//스레드를 만드는 부분
+
+// 스레드를 만드는 부분
+// 스레드는 독립적으로 실행되기 때문에 필로가 죽어도 계속 동작함
 int	philo_create_thread(t_info *info)
 {
 	int	i;
@@ -450,6 +454,7 @@ int	philo_collect_all_thread(t_info *info)
 	return (1);
 }
 
+
 int	philo(t_info *info)
 {
 	int				gap;
@@ -461,6 +466,8 @@ int	philo(t_info *info)
 	if (philo_create_thread(info) == RET_ERROR)
 		return (RET_ERROR);
 	// 모니터로 죽은 애들 있는지 확인
+	// 메인 스레드 그니까 여기에서 모니터 함수에 들어가서 while(1) 로 계속 검사
+	// 그니까 monitor 함수와 philo_run 함수는 동시에 실행될 수 있음
 	ret_monitor = monitor(info);
 	gettimeofday(&curr, NULL);
 	gap = time_gap(info->start_time, curr);
@@ -474,6 +481,43 @@ int	philo(t_info *info)
 	return (0);
 }
 
+// void a()
+// {
+//     system("leaks a.out");
+// }
+
+
+void	destroy_info_mutex1(t_info *info)
+{
+	pthread_mutex_destroy(&info->m_everyone_eat);
+	pthread_mutex_destroy(&info->m_must_eat_all_flag);
+	pthread_mutex_destroy(&info->m_flag_die);
+	pthread_mutex_destroy(&info->m_start_time);
+	pthread_mutex_destroy(&info->m_print);
+	pthread_mutex_destroy(info->m_fork);
+}
+
+void	end_philo(t_info *info)
+{
+	int	i;
+
+	i = 0;
+	destroy_info_mutex1(info);
+	while (i < info->num_philo)
+	{
+		pthread_mutex_destroy(&info->philos[i].m_current_eat);
+		pthread_mutex_destroy(&info->philos[i].m_eat_count);
+		pthread_mutex_destroy(&info->philos[i].m_flag_eat_all);
+		pthread_mutex_destroy(&(info->m_fork[i]));
+		i++;
+	}
+	free(info->t_philo);
+	free(info->m_fork);
+	free(info->fork);
+	free(info->philos);
+	free(info);
+}
+
 int	main(int argc, char **argv)
 {
 	t_info	*info;
@@ -483,6 +527,7 @@ int	main(int argc, char **argv)
 		return (RET_ERROR);
 	if (philo(info) == RET_ERROR)
 		return (RET_ERROR);
-	// end_philo(info);
+	end_philo(info);
+	// atexit(a);
 	return (0);
 }
