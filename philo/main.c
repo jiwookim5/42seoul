@@ -121,6 +121,7 @@ t_info *make_info(int argc, char **argv)
 	return (info);
 }
 
+
 int philo_init(t_info *info)
 {
 	int i;
@@ -133,6 +134,9 @@ int philo_init(t_info *info)
 		info->philos[i].eat_count = 0;
 		info->philos[i].id = i;
 		info->philos[i].right_fork = i;
+		// num_philo = 2;
+		// 0 1
+		// 1 0
 		info->philos[i].left_fork = (i + 1) % info->num_philo;
 		i++;
 	}
@@ -156,6 +160,7 @@ int	time_gap(struct timeval start_time, struct timeval now_time)
 	sec = (now_time.tv_sec) - (start_time.tv_sec);
 	// 500 마이크로초는 0.5 밀리초로 변환되어야 합니다
 	micro = (sec * 1000) + ((now_time.tv_usec - start_time.tv_usec) / 1000);
+	// printf("micor = %d\n", (int)micro);
 	return ((int)micro);
 }
 
@@ -225,11 +230,15 @@ void	grab_fork(t_info *info, t_philo *p)
 	}
 }
 
+//start는 현재시간  sleep time 은 자야하는 시간
 void	custom_usleep_timer(struct timeval *start, int sleep_time)
 {
 	struct timeval	now;
 
 	gettimeofday(&now, 0);
+	// 현재시간이 자야하느 시간보다 작을경우 usleep을 해줌
+	// usleep의 정확도가 낮거나 불안정할 때, 더 정확한 대기 시간을 유지하기 위한 방법
+	// 즉 그냥 시간을 구해서 usleep을 하는 경우보다 더 정확하게 대기할 수 있어서 시간 밀리는 것을 최소화시킴
 	while (time_gap(*start, now) < sleep_time)
 	{
 		usleep(300);
@@ -240,21 +249,19 @@ void	custom_usleep_timer(struct timeval *start, int sleep_time)
 void	philo_eat(t_info *info, t_philo *p)
 {
 	struct timeval	time;
-	int				eat_count;
 
 	voice(EAT, info, p);
 	gettimeofday(&time, NULL);
 	// 현재시간 즉 먹은 시간
 	p->current_eat = time;
-	// usleep을 하는 이유
+	// 먹는 시간동안 기다림
 	custom_usleep_timer(&time, info->time_to_eat);
 	pthread_mutex_lock(&p->m_eat_count);
-	// 동시에 많은 스레드가 이 작업을 할 수 있기 때문에 복사 후 증가시킴
-	// 근데 없어도 될 듯
+	// 먹은 횟수를 올림
 	p->eat_count++;
-	eat_count = p->eat_count;
 	pthread_mutex_unlock(&p->m_eat_count);
-	if (eat_count == p->info->num_must_eat)
+	// 만약에 현재 먹은 횟수랑 먹어야하는 횟수랑 같으면 다 먹었다는 플레그를 1로 바꿈 (p->flag_eat_all == 1)
+	if (p->eat_count == p->info->num_must_eat)
 	{
 		pthread_mutex_lock(&p->m_flag_eat_all);
 		p->flag_eat_all = 1;
@@ -295,6 +302,8 @@ void	philo_sleep(t_info *info, t_philo *p)
 
 	voice(SLEEP, info, p);
 	gettimeofday(&time, NULL);
+	//스레드를 잠시 일시정시 시킴
+	// 왜냐하면 자는 애니까 잠시 일시정지 시켜서 다른 스레드들에게 포커스를 맞춰서 시간 밀림을 방지할 수 있다.
 	custom_usleep_timer(&time, info->time_to_sleep);
 }
 
@@ -311,7 +320,7 @@ void	philo_day_running(t_philo *p)
 	int	eat_all;
 
 	die = 0;
-	eat_all = 0;	//철학자가 죽기 전까지 무한루프
+	eat_all = 0;
 	while (1)
 	{
 		// 철학자가 죽었는지에 대한 여부 체크
@@ -349,6 +358,8 @@ void	*philo_run(void *arg)
 	// 철학자가 한명일 때  포크를 집지 않고 쉬다가 죽는다.
 	if (run->info->num_philo == 1)
 	{
+		//monitor로 지금 시간과 이따가 시간의 차이를 보고 죽을지 판단하기 때문
+		gettimeofday(&run->info->philos[0].current_eat, 0);
 		pthread_mutex_lock(&run->info->m_fork[run->right_fork]);
 		run->info->fork[run->right_fork] = 0;
 		voice(FORK, run->info, run);
@@ -358,7 +369,7 @@ void	*philo_run(void *arg)
 	}
 	// 철학자가 동시에 포크를 집지 않게 홀수 철학자는 0.1초만큼 기다림
 	else if ((run->id) % 2 != 0)
-		usleep(10000);
+		usleep(100);
 	philo_day_running(run);
 	return (NULL);
 }
@@ -373,7 +384,10 @@ int	philo_create_thread(t_info *info)
 	i = 0;
 	while (i < info->num_philo)
 	{
+		// 스레드가 시작되는 시간 
 		gettimeofday(&info->start_time, 0);
+		// 이 부분 이해를 못하겠어 philo_run에서 eat할 때 시간을 저장하는데 왜 또 나와서 저장해?
+		// gettimeofday(&info->philos[i].current_eat, 0);
 		//이 부분을 위해서 필로의 배열이 필요함
 		// 첫 번째 인자는 스레드를 담을 주소
 		// 두 번째 인자는 스레드 속성
@@ -381,8 +395,6 @@ int	philo_create_thread(t_info *info)
 		// 네 번째 인자는 세 번째 인자에서 불러온 함수 포인터에서 사용할 인자이다.
 		if (pthread_create(&info->t_philo[i], 0, philo_run, &info->philos[i]))
 			return (RET_ERROR);
-		// 이 부분 이해를 못하겠어 philo_run에서 eat할 때 시간을 저장하는데 왜 또 나와서 저장해?
-		gettimeofday(&info->philos[i].current_eat, 0);
 		//printf("Current eat time: %ld seconds %d microseconds\n", info->philos[i].current_eat.tv_sec, info->philos[i].current_eat.tv_usec);
 		i++;
 	}
@@ -481,10 +493,10 @@ int	philo(t_info *info)
 	return (0);
 }
 
-// void a()
-// {
-//     system("leaks a.out");
-// }
+void a()
+{
+    system("leaks philo");
+}
 
 
 void	destroy_info_mutex1(t_info *info)
