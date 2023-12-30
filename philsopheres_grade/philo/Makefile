@@ -3,17 +3,16 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: jiwkim2 <jiwkim2@student.42.fr>            +#+  +:+       +#+         #
+#    By: jaeyojun <jaeyojun@student.42seoul.kr>     +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2023/12/26 18:06:25 by jiwkim2           #+#    #+#              #
-#    Updated: 2023/12/28 21:11:09 by jiwkim2          ###   ########.fr        #
+#    Created: 2023/08/16 18:27:19 by jaeyojun          #+#    #+#              #
+#    Updated: 2023/08/17 20:03:24 by jaeyojun         ###   ########seoul.kr   #
 #                                                                              #
 # **************************************************************************** #
 
 CC = cc
 CFLAGS = -Wall -Wextra -Werror
-SRC = main.c monitor.c philo_act.c philo_check.c philo_init.c \
-		philo_run.c philo_utils.c philo.c time.c voice.c
+SRC = main.c init.c str.c print.c monitor.c time.c
 OBJ = $(SRC:.c=.o)
 NAME = philo
 
