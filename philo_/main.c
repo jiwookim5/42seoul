@@ -3,19 +3,19 @@
 /*                                                        :::      ::::::::   */
 /*   main.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jaeyojun <jaeyojun@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: jiwkim2 <jiwkim2@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/08/11 15:32:10 by jaeyojun          #+#    #+#             */
-/*   Updated: 2023/08/17 20:02:50 by jaeyojun         ###   ########seoul.kr  */
+/*   Created: 2023/12/31 13:49:47 by jiwkim2           #+#    #+#             */
+/*   Updated: 2023/12/31 13:50:29 by jiwkim2          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
 
-int	thread_eat(t_philo *philo)
+int	philo_eat(t_philo *philo)
 {
 	pthread_mutex_lock(&(philo->info->fork_m[philo->fork_left]));
-	if (printf_time_number(philo, "has taken a fork") == 1)
+	if (printf_time_philo(philo, "has taken a fork") == 1)
 	{
 		pthread_mutex_unlock(&(philo->info->fork_m[philo->fork_left]));
 		return (1);
@@ -23,8 +23,8 @@ int	thread_eat(t_philo *philo)
 	if (philo->info->philo_number == 1)
 		return (1);
 	pthread_mutex_lock(&(philo->info->fork_m[philo->fork_right]));
-	printf_time_number(philo, "has taken a fork");
-	printf_time_number(philo, "is eating");
+	printf_time_philo(philo, "has taken a fork");
+	printf_time_philo(philo, "is eating");
 	philo->eat++;
 	philo->thread_time = time_init();
 	ft_pass_time(philo->info->time_to_eat, philo->info);
@@ -46,7 +46,7 @@ int	must_eat_count(t_philo *philo)
 	return (0);
 }
 
-void	*action_thread(void *tmp)
+void	*philo_run(void *tmp)
 {
 	t_philo	*philo;
 
@@ -57,13 +57,13 @@ void	*action_thread(void *tmp)
 	while (!(philo->info->death_flag))
 	{
 		pthread_mutex_unlock(&(philo->info->death_m));
-		if (thread_eat(philo) == 1)
+		if (philo_eat(philo) == 1)
 			return (0);
 		if (must_eat_count(philo) == 1)
 			break ;
-		printf_time_number(philo, "is sleeping");
+		printf_time_philo(philo, "is sleeping");
 		ft_pass_time(philo->info->time_to_sleep, philo->info);
-		printf_time_number(philo, "is thinking");
+		printf_time_philo(philo, "is thinking");
 		pthread_mutex_lock(&(philo->info->death_m));
 	}
 	if (philo->info->must_eat != philo->eat)
@@ -81,7 +81,7 @@ int	ft_philo_start(t_info *info)
 	{
 		info->philo[i].thread_time = time_init();
 		pthread_create(&(info->philo[i].thread), NULL, \
-			action_thread, &(info->philo[i]));
+			philo_run, &(info->philo[i]));
 		i++;
 	}
 	ft_philo_check_finish(info->philo);

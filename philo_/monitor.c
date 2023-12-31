@@ -5,8 +5,8 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: jiwkim2 <jiwkim2@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/08/11 15:32:10 by jaeyojun          #+#    #+#             */
-/*   Updated: 2023/12/30 18:57:18 by jiwkim2          ###   ########.fr       */
+/*   Created: 2023/12/31 13:50:01 by jiwkim2           #+#    #+#             */
+/*   Updated: 2023/12/31 13:51:09 by jiwkim2          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,7 @@ int	must_eat_check(t_philo *philo)
 
 void	ft_philo_check_finish(t_philo *philo)
 {
-	int			i;
+	int	i;
 
 	while (!(check_death(philo)))
 	{
@@ -75,7 +75,7 @@ void	ft_philo_check_finish(t_philo *philo)
 		{
 			if (thread_check_death(philo[i]))
 			{
-				printf_time_number(philo, "died");
+				printf_time_philo(philo, "died");
 				pthread_mutex_lock(&(philo->info->death_m));
 				philo->info->death_flag = 1;
 				pthread_mutex_unlock(&(philo->info->death_m));

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   print.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jaeyojun <jaeyojun@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: jiwkim2 <jiwkim2@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/08/13 16:40:59 by jaeyojun          #+#    #+#             */
-/*   Updated: 2023/08/17 13:53:13 by jaeyojun         ###   ########seoul.kr  */
+/*   Created: 2023/12/31 13:50:15 by jiwkim2           #+#    #+#             */
+/*   Updated: 2023/12/31 13:50:17 by jiwkim2          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@ void	print_error(char *tmp)
 	return ;
 }
 
-int	printf_time_number(t_philo *philo, char *msg)
+int	printf_time_philo(t_philo *philo, char *msg)
 {
 	pthread_mutex_lock(&(philo->info->print));
 	if (check_death(philo))

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   philo.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: jaeyojun <jaeyojun@student.42seoul.kr>     +#+  +:+       +#+        */
+/*   By: jiwkim2 <jiwkim2@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2023/08/11 15:31:39 by jaeyojun          #+#    #+#             */
-/*   Updated: 2023/08/17 20:08:51 by jaeyojun         ###   ########seoul.kr  */
+/*   Created: 2023/12/31 13:50:07 by jiwkim2           #+#    #+#             */
+/*   Updated: 2023/12/31 13:50:08 by jiwkim2          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,7 @@ int			must_eat_check(t_philo *philo);
 void		ft_philo_check_finish(t_philo *philo);
 int			check_death(t_philo *philo);
 void		ft_pass_time(long int time_to_eat, t_info *info);
-int			printf_time_number(t_philo *philo, char *msg);
+int			printf_time_philo(t_philo *philo, char *msg);
 void		free_philo(t_info *info);
 
 #endif
