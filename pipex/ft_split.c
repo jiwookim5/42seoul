@@ -128,3 +128,7 @@ char	**ft_split(char const *s, char c)
 	word[word_count] = 0;
 	return (word);
 }
+ 
+ 
+ 
+
